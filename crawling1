@@ -1,0 +1,73 @@
+# Import libraries
+import requests
+import wordcloud
+from bs4 import BeautifulSoup
+import pandas as pd
+from lxml import etree
+import pandas as pd
+import matplotlib.pyplot as plt
+from arabic_reshaper import arabic_reshaper
+from bidi.algorithm import get_display
+from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+
+#target url for achieving a list of active company in the field of medical equipments
+url1="https://www.otaghamal.com/%D8%B4%D8%B1%DA%A9%D8%AA%D9%87%D8%A7%DB%8C-%D8%AA%D8%AC%D9%87%DB%8C%D8%B2%D8%A7%D8%AA-%D9%BE%D8%B2%D8%B4%DA%A9%DB%8C"
+
+# Create object page
+page = requests.get(url1)
+
+# parser-lxml = Change html to Python friendly format
+# Obtain page's information
+soup = BeautifulSoup(page.text, 'lxml')
+
+# Obtain information from tag <table>
+table1 = soup.find('table')
+
+# Obtain every title of columns with tag <th>
+headers = []
+for i in table1.find_all('th'):
+    title = i.text
+    headers.append(title)
+
+# Create a dataframe
+mydata = pd.DataFrame(columns = headers)
+
+# Create a for loop to fill mydata
+for j in table1.find_all('tr')[1:]:
+    row_data = j.find_all('td')
+    row = [i.text for i in row_data]
+    length = len(mydata)
+    mydata.loc[length] = row
+
+# Python program to generate WordCloud
+comment_words = ''
+stopwords = set(STOPWORDS)
+ 
+# iterate through the csv file
+for val in mydata['نام شرکت']:
+     
+    # typecaste each val to string
+    val = str(val)
+ 
+    # split the value
+    tokens = val.split()
+     
+    # Converts each token into lowercase
+    for i in range(len(tokens)):
+        tokens[i] = tokens[i].lower()
+     
+    comment_words += " ".join(tokens)+" "
+text = get_display(arabic_reshaper.reshape(comment_words))
+
+wordcloud = WordCloud(width = 800, height = 800,font_path='tahoma.ttf',
+                background_color ='white',
+                stopwords = stopwords,
+                min_font_size = 10).generate(text)
+ 
+# plot the WordCloud image                      
+plt.figure(figsize = (8, 8), facecolor = None)
+plt.imshow(wordcloud)
+plt.axis("off")
+plt.tight_layout(pad = 0)
+ 
+plt.show()
